@@ -1,10 +1,12 @@
+
+
 const Neighborhoods =
   'https://raw.githubusercontent.com/muyangguo/6242/master/Zillow-DataClean/zillow-neighborhoods.geojson';
 
 const icons = 'https://raw.githubusercontent.com/uber-common/deck.gl-data/master/website/bart-stations.json';
 
 const ICON_MAPPING = {
-    marker: {x: 0, y: 0, width: 128, height: 256, mask: true}
+    marker: {x: 0, y: 0, width: 128, height: 256, mask: true,anchorY:200}
   };
 // console.log(Neighborhoods.length);
 // import React from 'React';
@@ -40,7 +42,7 @@ const INITIAL_VIEW_STATE = {
     longitude: -122.4194,
     zoom: 12,
     bearing: 0,
-    pitch: 30,
+    pitch: 60,
 };
 
 
@@ -48,7 +50,6 @@ const base_layer = [
   new deck.GeoJsonLayer({
     id: 'Neighborhoods',
     data: Neighborhoods,
-    // Styles
     filled: true,
     pointRadiusMinPixels: 2,
     opacity: 1,
@@ -257,13 +258,13 @@ function push_user_location(){
         // document.getElementById("match-button").removeAttribute('hidden');
         console.log('pushing user location')
         var data = doc.data();
-        
+        var userinfo = [data["id"]];
 
         var coords = [data["coordinates"]["longtitude"],data["coordinates"]["latitude"]];
         my_location_layer.push(      
           new deck.ScatterplotLayer({
           data: [
-            {position: coords, color: [250, 0, 0], radius: 150}
+            {position: coords, color: [65,105,225], radius: 150}
           ],
           getPosition: d => d.position,
           getRadius: d => d.radius,
@@ -276,22 +277,29 @@ function push_user_location(){
           id: 'icon-layer',
           // data: icons,
           data: [
-            {position: coords,color: [250, 0, 0], }
+            {position: coords,color: [65,105,225],id:userinfo}
+
           ],
           pickable: true,
+          autoHighlight: true,
         // iconAtlas and iconMapping are required
         // getIcon: return a string
           iconAtlas: 'images/icon-atlas.png',
           iconMapping: ICON_MAPPING,
           getIcon: d => 'marker',
-      
-          sizeScale: 15,
+          
+          sizeScale: 3,
+          sizeMinPixels: 100,
           getPosition: d => d.position,
-          getSize: d => 5,
+          getSize: d => 80,
           getColor: d => d.color,
           // onHover: ({object, x, y}) => {
           // const tooltip = `${object.name}\n${object.address}`;
-      
+          onClick: (event) => {
+            icon_event(data);
+            console.log(data.id);
+          },
+
           
         }),
 
@@ -333,24 +341,38 @@ uber_layer.push(
     id: 'line-layer',
     data: uber_data,
     pickable: true,
-    getWidth: 2,
+
+    getWidth: 4,
     getSourcePosition: d => d.start,
     getTargetPosition: d => d.end,
     getColor:function(d){
+      // var percent=100*d.speed/65
+      // var red=(percent>50?1-2*(percent-50)/100.0:1.0)*255
+      // var green=(percent>50?1.0:2*percent/100.0)*255
+      // return[red*1.1,green,0]
+      // console.log(color(d.speed))
+
+      // return color(d.speed)
       if(d.speed>45)
-      return [255,0,0];     
+      return  [0,255,0] ;   
       else if(d.speed>35)  
-      return [255,64,0];
+      return [75,255,0];
       else if(d.speed>30)  
-      return[255,128,0]  
+      return  [125,255,0];
       else if(d.speed>25)  
-      return[255,145,0]  
+      return  [255,255,0];
       else if(d.speed>20)  
-      return[255,191,0]  
+      return [255,191,0];
       else if(d.speed>15)  
-      return[255,255,0]
-      else 
-      return[0,255,255]}  
+      return [255,125,0];
+      else if(d.speed>10)
+      return [255,45,0];
+      else if(d.speed>5)
+      return [255,0,0];
+      else return [54.5,0,0];
+      
+        }  
+
        }    // onHover: ({object, x, y}) => {      // const tooltip = `${object.from.name} to ${object.to.name}`;      /* Update tooltip         http://deck.gl/#/documentation/developer-guide/adding-interactivity?section=example-display-a-tooltip-for-hovered-object      */    // }    }),
 ))
 
@@ -427,6 +449,7 @@ deckgl.setProps({layers: reset_layers});
 
 
 function match(){
+
   Swal.mixin({
     input: 'text',
     confirmButtonText: 'Next &rarr;',
@@ -522,7 +545,9 @@ function match(){
   // var UserRef = db.collection("users").doc(useruid);
   // UserRef.get().then(function(doc) {
   //   if (doc.exists) {
+
       
+
 
 
 
@@ -535,6 +560,7 @@ function match(){
   //   }).catch(function(error) {
   //   console.log("Error getting document:", error);
   // });
+
 };
 
 function click_user(){
@@ -542,9 +568,62 @@ function click_user(){
     position: 'top',
     icon:'success',
     background: `rgb(0,0,0,9)`,
-    text: 'testingmyclick',
+    text:"success",
     confirmButtonColor: `rgb(0,0,0)`,
   })
 };
 
+
+var global_lat;
+var global_long;
+function icon_event(d){
+  console.log(update_layer);
+  var user_lat = d.coordinates.latitude;
+  var user_long = d.coordinates.longtitude;
+  global_lat = user_lat;
+  global_long= user_long;
+  console.log(d);
+  // push_sfpd_layer(user_lat,user_long);
+  Swal.fire({
+    position: 'middle',
+    imageUrl: d.photoURL,
+    imageWidth: 300,
+    imageHeight: 300,
+    // icon:'success',
+    showCloseButton: true,
+    showCancelButton: true,
+    background: `rgb(0,0,0)`,
+    title: d.name,
+    html: "User id: "+ d.id+"<br>Email: "+d.email+"<br>Gender: "+d.gender+"<br>Role: "+d.type,
+    //"the userid: "+d.id,
+
+    confirmButtonText: "View Stats",
+    cancelButtonText: "Messages",
+  }).then((result) => {
+    if (result.value) {
+      openNav_picker();
+      push_sfpd_layer(user_lat,user_long);
+    // push_sfpd_layer(user_lat,user_long);
+    }
+    else if (
+      /* Read more about handling dismissals below */
+      result.dismiss === Swal.DismissReason.cancel
+    ) {
+      Swal.fire(
+        'communcation starting',
+        'success'
+      )
+
+      
+
+
+
+
+
+
+        // push_sfpd_layer(user_lat,user_long);
+    }
+  })
+  
+};
 
