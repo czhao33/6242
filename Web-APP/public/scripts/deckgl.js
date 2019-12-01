@@ -6,8 +6,12 @@ const Neighborhoods =
 const icons = 'https://raw.githubusercontent.com/uber-common/deck.gl-data/master/website/bart-stations.json';
 
 const ICON_MAPPING = {
-    marker: {x: 0, y: 0, width: 128, height: 256, mask: true,anchorY:200}
+    marker: {x: 0, y: 0, width: 128, height: 256, mask: true, anchorY:200}
   };
+
+const POSITION_ICON_MAPPING = {
+    marker: {x: 0, y: 0, width: 512, height: 512, mask: true, anchorY:800}
+};
 // console.log(Neighborhoods.length);
 // import React from 'React';
 // const MAPBOX_TOKEN = `${process.env.REACT_APP_MAPBOX_API_KEY}`
@@ -258,7 +262,9 @@ function push_user_location(){
         // document.getElementById("match-button").removeAttribute('hidden');
         console.log('pushing user location')
         var data = doc.data();
+        console.log(data)
         var userinfo = [data["id"]];
+        photo_URL = data["photoURL"];
 
         var coords = [data["coordinates"]["longtitude"],data["coordinates"]["latitude"]];
         my_location_layer.push(      
@@ -272,9 +278,9 @@ function push_user_location(){
           
           opacity: 0.3
         }),
-      
+        
         new deck.IconLayer({
-          id: 'icon-layer',
+          id: 'icon-layer-pointer',
           // data: icons,
           data: [
             {position: coords,color: [65,105,225],id:userinfo}
@@ -284,11 +290,19 @@ function push_user_location(){
           autoHighlight: true,
         // iconAtlas and iconMapping are required
         // getIcon: return a string
-          iconAtlas: 'images/icon-atlas.png',
-          iconMapping: ICON_MAPPING,
+          // iconAtlas: 'images/icon-atlas.png',
+          iconAtlas: 'images/icon_position.png',
+          iconMapping: POSITION_ICON_MAPPING,
           getIcon: d => 'marker',
+          // getIcon: d => ({
+       
+          //   url: photo_URL,
+          //   width: 128,
+          //   height: 128,
+          //   anchorY: 200,
+          // }),
           
-          sizeScale: 3,
+          sizeScale: 1,
           sizeMinPixels: 100,
           getPosition: d => d.position,
           getSize: d => 80,
@@ -297,7 +311,44 @@ function push_user_location(){
           // const tooltip = `${object.name}\n${object.address}`;
           onClick: (event) => {
             icon_event(data);
-            console.log(data.id);
+            // console.log(data.id);
+          },
+        }),
+
+
+        new deck.IconLayer({
+          id: 'icon-layer-image',
+          // data: icons,
+          data: [
+            {position: coords,color: [65,105,225],id:userinfo}
+
+          ],
+          pickable: true,
+          autoHighlight: true,
+        // iconAtlas and iconMapping are required
+        // getIcon: return a string
+          // iconAtlas: 'images/icon-atlas.png',
+          // iconMapping: ICON_MAPPING,
+          // getIcon: d => 'marker',
+          getIcon: d => ({
+       
+            url: photo_URL,
+            width: 128,
+            height: 128,
+            anchorY: 220,
+            anchorX: -50,
+          }),
+          
+          sizeScale: 1,
+          sizeMinPixels: 100,
+          getPosition: d => d.position,
+          getSize: d => 80,
+          // getColor: d => d.color,
+          // onHover: ({object, x, y}) => {
+          // const tooltip = `${object.name}\n${object.address}`;
+          onClick: (event) => {
+            icon_event(data);
+            // console.log(data.id);
           },
 
           
@@ -377,12 +428,13 @@ uber_layer.push(
 ))
 
 //var new_layer = uber_layer.concat(base_layer).concat(update_layer);
-if (uber_layer_flag != true){
+// if (uber_layer_flag != true){
   var new_layer = uber_layer.concat(base_layer).concat(update_layer);
-  update_layer = update_layer.concat(uber_layer);
+  // update_layer = update_layer.concat(uber_layer);
+  update_layer.push(uber_layer)
   deckgl.setProps({layers: new_layer});
   uber_layer_flag = true;
-}
+// }
 
 };
 
@@ -413,7 +465,7 @@ function mapbox_geocoding(location){
       db.collection("users").doc(useruid).update({
           coordinates:{
             latitude:latitude,
-            longtitude,longtitude,
+            longtitude:longtitude,
           },
           })
           .then(function() {
@@ -448,120 +500,13 @@ deckgl.setProps({layers: reset_layers});
 
 
 
-// function match(){
 
-//   Swal.mixin({
-//     input: 'text',
-//     confirmButtonText: 'Next &rarr;',
-//     showCancelButton: true,
-//     showConfirmButton: true,
-//     position: 'top',
-//     background: `rgb(0,0,0,0.9)`,
-//     // confirmButtonColor: `rgb(0,0,0)`,
-//     // cancelButtonColor:`rgb(0,250,0)`,
-//     progressSteps: ['1', '2', '3']
-//   }).queue([
-//     {
-//       text: 'Which type of apartment do you want to live in?',
-//       input: 'select',
-//       inputOptions: {
-//         'all_home':'All Home',
-//         'single_family':'Single Family',
-//         'condo':'Condo',
-//         'top_tier':'Top Tier',
-//         'middle_tier':'Middle Tier',
-//         'bottom_tier':'Bottom Tier',
-//         'studio':'Studio',
-//         'one_bedroom':'One Bedroom',
-//         'two_bedroom':'Two Bedroom',
-//         'three_bedroom':'Three Bedroom',
-//         'four_bedroom':'Four Bedroom'
-//       } 
-//     },
-//     {
-//       text: "What's the maximum monthly rental",
-//       input: 'number'
-//     },
-//     {
-//       text: "What's the minimum monthly rental",
-//       input: 'number'
-//     }
-//   ]).then((result) => {
-//     if (result.value) {
-//       const answers = JSON.stringify(result.value)
-//       Swal.fire({
-//         title: 'All done!',
-//         html: `
-//           Your answers:
-//           <pre><code>${answers}</code></pre>
-//         `,
-//         position: 'top',
-//         background: `rgb(0,0,0,9)`,
-//         confirmButtonColor: `rgb(0,0,0)`,
-//         confirmButtonText: 'Finish!'
-//       })
-//     }
-//     var rawbase = 'https://raw.githubusercontent.com/';
-//     var jsonloc = 'muyangguo/6242/master/Zillow-DataClean/zillowDataCleanedv2.geojson';
-//     $.getJSON(rawbase + jsonloc, function( data ) {
-//       var regions=data['features']
-//       var matchedRegions=[]
-//       for (region of regions){
-//         var regionId=region["properties"]["regionid"]
-//         var regionPrice=region['properties'][result.value[0]] 
-//         if (regionPrice!=null && regionPrice<=result.value[1] && regionPrice>=result.value[2]){
-//           matchedRegions.push(regionId)
-//         }
-//       }
-//       var user = firebase.auth().currentUser;
-//       var useruid;
-//       var usertype;
-//       if (user != null) {
-//         useruid = user.uid  // The user's ID, unique to the Firebase project.
-//       }
-//       db.collection("users").doc(useruid).get().then(function(doc){
-//         var data=doc.data()
-//         console.log(doc.data())
-//         usertype=data['type']
-//         console.log(usertype)
-//         for (matchedRegion of matchedRegions){
-//           db.collection('regions').doc(matchedRegion).collection('users').doc(useruid).set(
-//             {
-//               uid: useruid,
-//               type: usertype,
-//               flag:1
-//             }
-//           )
-//         }
-//       })
-//       db.collection("users").doc(useruid).update({
-//         matchedRegions: matchedRegions
-//       }) 
-//     });
-    
-//   })
-//   // var user = firebase.auth().currentUser;
-//   // var useruid = user.uid;
-//   // var UserRef = db.collection("users").doc(useruid);
-//   // UserRef.get().then(function(doc) {
-//   //   if (doc.exists) {
+
 
       
 
 
 
-
-
-//   //   }
-//   //   else {
-  
-//   //   console.log("No such document!");
-//   // }
-//   //   }).catch(function(error) {
-//   //   console.log("Error getting document:", error);
-//   // });
-
-// };
 
 function click_user(){
   Swal.fire({
@@ -576,7 +521,9 @@ function click_user(){
 
 var global_lat;
 var global_long;
+
 function icon_event(d){
+  console.log(d)
   console.log(update_layer);
   var user_lat = d.coordinates.latitude;
   var user_long = d.coordinates.longtitude;
@@ -597,7 +544,7 @@ function icon_event(d){
     html: "User id: "+ d.id+"<br>Email: "+d.email+"<br>Gender: "+d.gender+"<br>Role: "+d.type,
     //"the userid: "+d.id,
 
-    confirmButtonText: "View Stats",
+    confirmButtonText: "View Location Stats",
     cancelButtonText: "Messages",
   }).then((result) => {
     if (result.value) {
